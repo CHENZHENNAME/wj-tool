@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+
+    <!-- 设置格式化输出格式 -->
+    <property name="pattern" value="%d{yyyy-MM-dd:HH:mm:ss.SSS} %r [%thread] %-5level %c %M %L  %msg%n"/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 字符串System.out（默认）或者System.err -->
+        <target>System.out</target>
+        <!-- 对记录事件进行格式化 -->
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="TRACE">
+        <appender-ref ref="console"/>
+    </root>
+</configuration>
