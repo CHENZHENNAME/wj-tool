@@ -69,7 +69,7 @@ public class XmlObjectToBean {
             }
             name = field.getName();
             Object node = parent.getNode(name);
-            Object value = null;
+            Object value;
             if (pt instanceof GenericArrayType) {
                 // 泛型数组
                 value = xmlObjectToArray(node, targetType);
@@ -125,20 +125,19 @@ public class XmlObjectToBean {
             bean.add(node);
             return bean;
         }
+
         // 因为 xml标签可以重复出现
         // 可能只有一个普通值 也可能是一个复杂对象值
         if (node instanceof List) {
             List<?> list = (List<?>) node;
-            int size = list.size();
-            for (int i = 0; i < size; i++) {
-                Object item = list.get(i);
-                Object val = xmlValueConvert(item, targetType);
-                Array.set(bean, i, val);
+            for (Object item : list) {
+                Object val = xmlValueConvert(item, genericType);
+                bean.add(val);
             }
             return bean;
         } else {
             // 单个标签 转换为集合
-            Object val = xmlValueConvert(node, targetType);
+            Object val = xmlValueConvert(node, genericType);
             bean.add(val);
         }
         return bean;
@@ -152,12 +151,9 @@ public class XmlObjectToBean {
         // node 可能是 基本类型 也可能是 XmlObject
         // 基本类型
         Object nodeValue = null;
-        Object val = null;
+        Object val;
         if (node instanceof XmlObject) {
             nodeValue = ((XmlObject) node).getValue();
-            if (nodeValue == null) {
-                return null;
-            }
             val = TypeUtil.deserializer(nodeValue, type);
         } else {
             val = TypeUtil.deserializer(node, type);
@@ -170,7 +166,6 @@ public class XmlObjectToBean {
         if (service != null) {
             return service.deserializer(nodeValue, config.getPattern(type));
         }
-        // 自定义对象类型
         if (type.isArray()) {
             xmlObjectToArray(node, targetType);
         }
@@ -183,8 +178,15 @@ public class XmlObjectToBean {
             }
             throw new XmlException("error type " + type.getName() + " not supported to convert to Map");
         }
+        // 自定义对象类型
         if (node instanceof XmlObject) {
-            return toBean((XmlObject) node, targetType);
+            XmlObject object = (XmlObject) node;
+            // 类上存在 注解情况
+            Object item = classAnnotation(object, type);
+            if (!(item instanceof XmlObject)) {
+                throw new XmlException("error type " + type.getName());
+            }
+            return toBean((XmlObject) item, targetType);
         }
         throw new XmlException("error type " + node.getClass() + " not supported to convert to " + type);
     }
@@ -217,5 +219,21 @@ public class XmlObjectToBean {
             return (XmlObject) node;
         }
         throw new XmlException("error type " + node.getClass());
+    }
+
+    /**
+     * 可能返回 集合 也可能返回 XmlObject
+     * @param xml 当前xml对象
+     * @param clazz 类型
+     * @return 处理类上的xml后的 值
+     */
+    private Object classAnnotation(XmlObject xml, Class<?> clazz){
+        // 类上存在 注解情况
+        Xml ann = clazz.getAnnotation(Xml.class);
+        if (ann == null) {
+            return xml;
+        }
+        String objectName = ann.value().isEmpty() ? clazz.getSimpleName(): ann.value();
+        return xml.getNode(objectName);
     }
 }

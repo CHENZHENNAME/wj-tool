@@ -39,6 +39,11 @@ public class XmlConfig {
      */
     private boolean escape = false;
 
+    /**
+     * 如果这个xml标签没有值和属性 也没有子节点 不进行序列化
+     */
+    private boolean ignoreEmptyTag = false;
+
     public Charset getCharset() {
         return charset;
     }
@@ -85,6 +90,14 @@ public class XmlConfig {
 
     public void setEscape(boolean escape) {
         this.escape = escape;
+    }
+
+    public boolean isIgnoreEmptyTag() {
+        return ignoreEmptyTag;
+    }
+
+    public void setIgnoreEmptyTag(boolean ignoreEmptyTag) {
+        this.ignoreEmptyTag = ignoreEmptyTag;
     }
 
     public String getPattern(Class<?> type){

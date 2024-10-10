@@ -36,33 +36,23 @@ public class BeanToXmlObject {
         }
         XmlObject root = new XmlObject();
         Class<?> cls = bean.getClass();
-        XmlObject parent = parseXmlAnnotation(null, cls, root);
-        if (parent == root) {
+        // 类上注解处理
+        Xml ann = cls.getAnnotation(Xml.class);
+        if (ann == null) {
             String clsSimpleName = cls.getSimpleName();
-            toXmlObject(parent, clsSimpleName, bean);
-
+            XmlObject node = new XmlObject();
+            root.appendNode(clsSimpleName, node);
+            toXmlObject(node, bean);
         }else {
-            toXmlObject(parent, null, bean);
+            toXmlObject(root, bean);
         }
-
         return root;
 
     }
-    private void toXmlObject(XmlObject parent, String tageName, Object bean) {
+    private void toXmlObject(XmlObject parent, Object bean) {
 
-        if (bean == null) {
-            if (tageName == null || tageName.isEmpty()) {
-                return;
-            }
-            // 只有一个标签的情况
-            parent.appendNode(tageName, null);
-        }
-
-        if (bean instanceof XmlObject) {
-            parent.appendNode(tageName, bean);
-        }
         Class<?> cls = bean.getClass();
-        parent = parseXmlAnnotation(tageName, cls, parent);
+        parent = parseXmlAnnotation(cls, parent);
 
 
         // 处理字段
@@ -78,35 +68,16 @@ public class BeanToXmlObject {
             if (nodeField.isIgnore()) {
                 continue;
             }
-            XmlObject node = nodeField.getNode();
-            parent.appendNode(nodeField.getName(), node);
+            name = nodeField.getName();
+
             if (nodeField.isFlag()) {
+                XmlObject node = nodeField.getNode();
+                parent.appendNode(name, node);
                 node.setValue(fieldNode.getValue());
-            } else {
-                fieldValueToXmlObject(node, nodeField.getName(), val);
+                continue;
             }
-
+            valueToXmlObject(parent, name, val);
         }
-
-    }
-    private void fieldValueToXmlObject(XmlObject parent, String tageName, Object bean) {
-        if (bean == null) {
-            return;
-        }
-        // 基本类型处理
-        Object val = TypeUtil.serialize(bean);
-        if (val != null) {
-            parent.setValue(val);
-            return;
-        }
-        Class<?> cls = bean.getClass();
-        // 日期处理
-        if (DateUtil.getConvertService(cls) != null) {
-            // 日期类型
-            parent.setValue(bean);
-            return;
-        }
-        objectToXmlObject(parent, tageName, bean);
     }
 
     /**
@@ -133,10 +104,6 @@ public class BeanToXmlObject {
             parent.appendNode(tageName, bean);
             return;
         }
-        objectToXmlObject(parent, tageName, bean);
-    }
-    private void objectToXmlObject(XmlObject parent, String tageName, Object bean) {
-        Class<?> cls = bean.getClass();
         if (cls.isArray()) {
             arrayToXmlArray(parent, tageName, bean);
         } else if (Iterable.class.isAssignableFrom(cls)) {
@@ -146,9 +113,13 @@ public class BeanToXmlObject {
             parent.appendNode(tageName, object);
             mapToXmlObject(object, (Map<?, ?>) bean);
         } else {
-            toXmlObject(parent, tageName, bean);
+            XmlObject node = new XmlObject();
+            parent.appendNode(tageName, node);
+            toXmlObject(node, bean);
         }
+
     }
+
     private void mapToXmlObject(XmlObject parent, Map<?, ?> bean) {
         Set<? extends Map.Entry<?, ?>> entriedSet = bean.entrySet();
         for (Map.Entry<?, ?> entry : entriedSet) {
@@ -182,35 +153,27 @@ public class BeanToXmlObject {
 
     /**
      * 处理类上的 xml注解
-     * @param tageName 上级标签名称
      * @param type 类
      * @param parent 父节点
      * @return 处理后的节点
      */
-    private XmlObject parseXmlAnnotation(String tageName, Class<?> type, XmlObject parent){
-        XmlObject nodeParent = parent;
-        // 上级标签不为空
-        if (tageName != null && !tageName.isEmpty()) {
-            nodeParent = new XmlObject();
-            parent.appendNode(tageName, nodeParent);
-        }
-        XmlObject object = new XmlObject();
-        String clsSimpleName = type.getSimpleName();
-        Xml xmlAnn = type.getAnnotation(Xml.class);
-        if (xmlAnn != null) {
-            if (!xmlAnn.value().isEmpty()) {
-                clsSimpleName = xmlAnn.value();
-            }
-            Attribute[] attribute = xmlAnn.attribute();
-            for (Attribute att : attribute) {
-                object.appendAttribute(att.attrName(), att.attrValue());
-            }
-
-            nodeParent.appendNode(clsSimpleName, object);
-            return object;
+    private XmlObject parseXmlAnnotation(Class<?> type, XmlObject parent){
+        Xml ann = type.getAnnotation(Xml.class);
+        if (ann == null) {
+            return parent;
         } else {
-            return nodeParent;
+            String clsSimpleName = type.getSimpleName();
+            if (!ann.value().isEmpty()) {
+                clsSimpleName = ann.value();
+            }
+            XmlObject node = new XmlObject();
+            Attribute[] attribute = ann.attribute();
+            for (Attribute att : attribute) {
+                node.appendAttribute(att.attrName(), att.attrValue());
+            }
+            parent.appendNode(clsSimpleName, node);
+            return node;
         }
-
     }
+
 }

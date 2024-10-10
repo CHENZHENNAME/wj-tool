@@ -4,12 +4,13 @@ import cn.chenzhen.wj.type.convert.DateUtil;
 import cn.chenzhen.wj.type.convert.TypeUtil;
 import cn.chenzhen.wj.util.UnicodeUtil;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.time.*;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class XmlWrite implements AutoCloseable{
@@ -66,6 +67,9 @@ public class XmlWrite implements AutoCloseable{
 
     private void xmlObjectToString(String xmlName, Object xml) throws IOException {
         if (xml == null) {
+            if (config.isIgnoreEmptyTag()) {
+                return;
+            }
             buildXmlTag(xmlName, null);
             return;
         }
@@ -87,14 +91,20 @@ public class XmlWrite implements AutoCloseable{
             throw new XmlException("error type " + xml.getClass());
         }
         XmlObject xmlObject = (XmlObject) xml;
+        Map<String, Object> nodes = xmlObject.getNodes();
+        Object value = xmlObject.getValue();
+        val = convertFiledValue(value);
+        boolean valueFlag = val == null || val.toString().isEmpty();
+        boolean nodeFlag = nodes == null || nodes.isEmpty();
+        // 判断是否需要处理空标签
+        if (valueFlag && nodeFlag && config.isIgnoreEmptyTag()) {
+            return;
+        }
 
         out.write(XML_TAG_LT);
         out.write(xmlName);
         buildAttribute(xmlObject);
-        Map<String, Object> nodes = xmlObject.getNodes();
-        Object value = xmlObject.getValue();
-        val = convertFiledValue(value);
-        if ((nodes == null || nodes.isEmpty()) && (val == null || val.toString().isEmpty()) && config.isSimpleTag()) {
+        if ( nodeFlag && valueFlag && config.isSimpleTag()) {
             out.write(XML_TAG_SLASH);
             out.write(XML_TAG_GT);
             return;
@@ -170,12 +180,12 @@ public class XmlWrite implements AutoCloseable{
         }
         buildXmlTagEnd(name);
     }
-    private void buildXmlTagStart(String xmlName) throws IOException {
+    private void buildXmlTagStart(String xmlName) {
         out.write(XML_TAG_LT);
         out.write(xmlName);
         out.write(XML_TAG_GT);
     }
-    private void buildXmlTagEnd(String xmlName) throws IOException {
+    private void buildXmlTagEnd(String xmlName) {
         out.write(XML_TAG_LT);
         out.write(XML_TAG_SLASH);
         out.write(xmlName);
