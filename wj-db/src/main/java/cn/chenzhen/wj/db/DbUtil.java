@@ -29,7 +29,7 @@ public class DbUtil extends DbTransaction{
      */
     public  static int executeUpdateType(String type, String sql, Object... params){
         logger.debug("type:{}, sql:{} , params:{}",type, sql, params);
-        try (Connection connection = ConnectionManager.getConnection(type);){
+        try (Connection connection = ConnectionManager.getConnection(type)){
             return DbExecute.executeUpdate(connection, sql, params);
         }catch (Exception e) {
             throw new DbException(e);
@@ -54,7 +54,7 @@ public class DbUtil extends DbTransaction{
      * @return 集合（<列名称, 值>）
      */
     public static List<Map<String, Object>> executeQuery(String sql, Object... params){
-        return executeQuery(ConnectionManager.DEFAULT, sql, params);
+        return executeQueryType(ConnectionManager.DEFAULT, sql, params);
     }
 
     /**
@@ -66,7 +66,7 @@ public class DbUtil extends DbTransaction{
      */
     public static Map<String, Object> executeQueryOneType(String type, String sql, Object... params){
         logger.debug("type:{}, sql:{} , params:{}",type, sql, params);
-        try (Connection connection = ConnectionManager.getConnection(type);){
+        try (Connection connection = ConnectionManager.getConnection(type)){
             return DbExecute.executeQueryOne(connection, sql, params);
 
         }catch (Exception e) {
@@ -81,9 +81,9 @@ public class DbUtil extends DbTransaction{
      * @param params 参数
      * @return 集合（<列名称, 值>）
      */
-    public static List<Map<String, Object>> executeQuery(String type, String sql, Object... params){
+    public static List<Map<String, Object>> executeQueryType(String type, String sql, Object... params){
         logger.debug("type:{}, sql:{} , params:{}",type, sql, params);
-        try (Connection connection = ConnectionManager.getConnection(type);){
+        try (Connection connection = ConnectionManager.getConnection(type)){
             return DbExecute.executeQuery(connection, sql, params);
 
         }catch (Exception e) {
@@ -98,7 +98,7 @@ public class DbUtil extends DbTransaction{
      * @param params 参数
      */
     public static void executeQuery(String sql, Consumer<Map<String, Object>> consumer, Object... params){
-        executeQuery(ConnectionManager.DEFAULT, sql, consumer, params);
+        executeQueryType(ConnectionManager.DEFAULT, sql, consumer, params);
     }
     /**
      * 执行指定SQL 将结果集转换为map集合
@@ -107,9 +107,9 @@ public class DbUtil extends DbTransaction{
      * @param consumer 消费对象
      * @param params 参数
      */
-    public static void executeQuery(String type, String sql, Consumer<Map<String, Object>> consumer, Object... params){
+    public static void executeQueryType(String type, String sql, Consumer<Map<String, Object>> consumer, Object... params){
         logger.debug("type:{}, sql:{} , params:{}",type, sql, params);
-        try (Connection connection = ConnectionManager.getConnection(type);){
+        try (Connection connection = ConnectionManager.getConnection(type)){
             DbExecute.executeQuery(connection, sql, consumer, params);
         }catch (Exception e) {
             throw new DbException(e);
@@ -126,7 +126,7 @@ public class DbUtil extends DbTransaction{
      * @return 目标对象
      */
     public static <T> T executeQueryOne(String sql, Class<T> clazz, Object... params){
-        return executeQueryOne(ConnectionManager.DEFAULT, sql, clazz, params);
+        return executeQueryOneType(ConnectionManager.DEFAULT, sql, clazz, params);
     }
 
     /**
@@ -137,7 +137,7 @@ public class DbUtil extends DbTransaction{
      * @return 目标对象 集合
      */
     public static <T> List<T> executeQuery(String sql, Class<T> clazz, Object... params){
-        return executeQuery(ConnectionManager.DEFAULT, sql, clazz, params);
+        return executeQueryType(ConnectionManager.DEFAULT, sql, clazz, params);
     }
 
     /**
@@ -148,9 +148,9 @@ public class DbUtil extends DbTransaction{
      * @param params 参数
      * @return 目标对象
      */
-    public static <T> T executeQueryOne(String type, String sql, Class<T> clazz, Object... params){
+    public static <T> T executeQueryOneType(String type, String sql, Class<T> clazz, Object... params){
         logger.debug("type:{}, sql:{} , params:{}",type, sql, params);
-        try (Connection connection = ConnectionManager.getConnection(type);){
+        try (Connection connection = ConnectionManager.getConnection(type)){
             return DbExecute.executeQueryOne(connection, sql, clazz, params);
 
         }catch (Exception e) {
@@ -166,9 +166,9 @@ public class DbUtil extends DbTransaction{
      * @param params 参数
      * @return 目标对象 集合
      */
-    public static <T> List<T> executeQuery(String type, String sql, Class<T> clazz, Object... params){
+    public static <T> List<T> executeQueryType(String type, String sql, Class<T> clazz, Object... params){
         logger.debug("type:{}, sql:{} , params:{}",type, sql, params);
-        try (Connection connection = ConnectionManager.getConnection(type);){
+        try (Connection connection = ConnectionManager.getConnection(type)){
             return DbExecute.executeQuery(connection, sql, clazz, params);
 
         }catch (Exception e) {
@@ -185,7 +185,7 @@ public class DbUtil extends DbTransaction{
      * @param params 参数
      */
     public static <T> void executeQuery(String sql, Class<T> clazz, Consumer<T> consumer, Object... params){
-        executeQuery(ConnectionManager.DEFAULT, sql, clazz, consumer, params);
+        executeQueryType(ConnectionManager.DEFAULT, sql, clazz, consumer, params);
     }
     /**
      * 执行指定SQL 将结果集转换为map集合
@@ -194,9 +194,9 @@ public class DbUtil extends DbTransaction{
      * @param consumer 消费对象
      * @param params 参数
      */
-    public static <T> void executeQuery(String type, String sql, Class<T> clazz, Consumer<T> consumer, Object... params){
+    public static <T> void executeQueryType(String type, String sql, Class<T> clazz, Consumer<T> consumer, Object... params){
         logger.debug("type:{}, sql:{} , params:{}",type, sql, params);
-        try (Connection connection = ConnectionManager.getConnection();){
+        try (Connection connection = ConnectionManager.getConnection()){
             DbExecute.executeQuery(connection, sql, clazz, consumer, params);
 
         }catch (Exception e) {

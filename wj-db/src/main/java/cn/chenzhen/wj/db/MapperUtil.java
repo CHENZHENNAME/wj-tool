@@ -127,7 +127,7 @@ public class MapperUtil {
         BeanSql beanSql = SqlBeanUtil.beanToSelect(bean);
         @SuppressWarnings("unchecked")
         Class<T> cls = (Class<T>) bean.getClass();
-        return DbUtil.executeQuery(type, beanSql.getSql(), cls, beanSql.getParams());
+        return DbUtil.executeQueryType(type, beanSql.getSql(), cls, beanSql.getParams());
     }
 
     /**
@@ -148,7 +148,7 @@ public class MapperUtil {
      * @param <T> 返回类型
      */
     public static <T> List<T> select(String type, QueryWrapper wrapper, Class<T> clsType) {
-        return DbUtil.executeQuery(type, wrapper.getSql(), clsType, wrapper.getParams());
+        return DbUtil.executeQueryType(type, wrapper.getSql(), clsType, wrapper.getParams());
     }
 
 
@@ -171,7 +171,7 @@ public class MapperUtil {
      * @param <T> 返回类型
      */
     public static <T> void select(String type, QueryWrapper wrapper, Class<T> clsType, Consumer<T> consumer) {
-        DbUtil.executeQuery(type, wrapper.getSql(), clsType, consumer, wrapper.getParams());
+        DbUtil.executeQueryType(type, wrapper.getSql(), clsType, consumer, wrapper.getParams());
     }
 
     /**
@@ -195,7 +195,7 @@ public class MapperUtil {
         BeanSql beanSql = SqlBeanUtil.beanToSelect(bean);
         @SuppressWarnings("unchecked")
         Class<T> cls = (Class<T>) bean.getClass();
-        return DbUtil.executeQueryOne(type, beanSql.getSql(), cls, beanSql.getParams());
+        return DbUtil.executeQueryOneType(type, beanSql.getSql(), cls, beanSql.getParams());
     }
 
     /**
@@ -216,6 +216,6 @@ public class MapperUtil {
      * @param <T> 返回类型
      */
     public static <T> T selectOne(String type, QueryWrapper wrapper, Class<T> clsType) {
-        return DbUtil.executeQueryOne(type, wrapper.getSql(), clsType, wrapper.getParams());
+        return DbUtil.executeQueryOneType(type, wrapper.getSql(), clsType, wrapper.getParams());
     }
 }
