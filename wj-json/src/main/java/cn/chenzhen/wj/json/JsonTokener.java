@@ -154,7 +154,7 @@ public class JsonTokener implements AutoCloseable {
             return null;
         }
         try {
-            return new BigDecimal(val);
+            return new BigDecimal(val.trim());
         } catch (Exception e) {
             throw new JsonException(e);
         }
