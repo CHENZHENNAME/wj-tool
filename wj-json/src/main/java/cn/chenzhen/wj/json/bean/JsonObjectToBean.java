@@ -1,13 +1,10 @@
 package cn.chenzhen.wj.json.bean;
 
-import cn.chenzhen.wj.json.JsonArray;
-import cn.chenzhen.wj.json.JsonConfig;
-import cn.chenzhen.wj.json.JsonObject;
-import cn.chenzhen.wj.json.JsonUtil;
+import cn.chenzhen.wj.json.*;
 import cn.chenzhen.wj.json.bean.annotation.processor.AnnotationProcessor;
 import cn.chenzhen.wj.json.bean.annotation.processor.AnnotationProcessorFactory;
 import cn.chenzhen.wj.reflect.ClassUtil;
-import cn.chenzhen.wj.reflect.GenericType;
+import cn.chenzhen.wj.reflect.ParameterizedTypeImpl;
 import cn.chenzhen.wj.reflect.TypeReference;
 import cn.chenzhen.wj.type.BeanClassTypeFactory;
 import cn.chenzhen.wj.type.convert.DateUtil;
@@ -25,26 +22,13 @@ public class JsonObjectToBean {
     /**
      * json对象转换为目标类型
      * @param json json对象
-     * @param clazz 目标类型
-     * @param config 配置
-     * @return 目标对象
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> T jsonToBean(Object json, Class<T> clazz, JsonConfig config) {
-        return (T)jsonToBean(json, new GenericType(clazz), config);
-    }
-
-    /**
-     * json对象转换为目标类型
-     * @param json json对象
      * @param config 配置
      * @param reference 目标类型
      * @return 目标对象
      */
     @SuppressWarnings("unchecked")
     public static <T> T jsonToBean(Object json, JsonConfig config, TypeReference<T> reference) {
-        GenericType type = reference.getGenericType();
-        return (T)jsonToBean(json, type, config);
+        return (T)jsonToBean(json, reference.getType(), config);
     }
 
     /**
@@ -54,14 +38,14 @@ public class JsonObjectToBean {
      * @param config 配置
      * @return 目标对象
      */
-    private static Object jsonToBean(Object json, GenericType type, JsonConfig config) {
+    public static Object jsonToBean(Object json, Type type, JsonConfig config) {
         if (json == null) {
             return null;
         }
         if (json instanceof String) {
             json = JsonUtil.jsonToObject((String) json);
         }
-        Class<?> cls = type.getType();
+        Class<?> cls = ClassUtil.getTypeClass(type);
         if (cls == Object.class) {
             return json;
         }
@@ -83,26 +67,25 @@ public class JsonObjectToBean {
      * @return 集合
      */
     @SuppressWarnings("unchecked")
-    private static Object jsonObjectToMap(JsonObject jsonObject, GenericType type, JsonConfig config){
+    private static Object jsonObjectToMap(JsonObject jsonObject, Type type, JsonConfig config){
         if (jsonObject == null) {
             return null;
         }
-        Class<?> cls = type.getType();
-        TypeVariable<? extends Class<?>>[] variables = cls.getTypeParameters();
-        String keyTypeName = variables[0].getName();
-        String valueTypeName = variables[1].getName();
+        Class<?> cls = ClassUtil.getTypeClass(type);
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+        Type[] arguments = parameterizedType.getActualTypeArguments();
         // map key 类型
-        Class<?> keyType = type.getGenericType().get(keyTypeName).getType();
+        Class<?> keyType = ClassUtil.getTypeClass(arguments[0]);
         // map value 类型
-        GenericType genericType = type.getGenericType().get(valueTypeName);
-        if (genericType == null || genericType.getType() == Object.class) {
+        Type Type = ClassUtil.getTypeClass(arguments[1]);
+        if (Type == null || Type == Object.class) {
             return jsonObject.getData();
         }
         Map<Object, Object> map= (Map<Object, Object>)BeanClassTypeFactory.createBean(cls);
         Set<Map.Entry<String, Object>> entrySet = jsonObject.getData().entrySet();
         for (Map.Entry<String, Object> entry : entrySet) {
             Object key = TypeUtil.deserializer(entry.getKey(), keyType);
-            Object val = valueConvert(entry.getValue(), genericType, config);
+            Object val = valueConvert(entry.getValue(), Type, config);
             map.put(key, val);
         }
         return map;
@@ -116,21 +99,26 @@ public class JsonObjectToBean {
      * @return 集合
      */
     @SuppressWarnings("unchecked")
-    private static Object jsonArrayToCollection(JsonArray jsonArray, GenericType type, JsonConfig config){
+    private static Object jsonArrayToCollection(JsonArray jsonArray, Type type, JsonConfig config){
         if (jsonArray == null) {
             return null;
         }
-        Class<?> cls = type.getType();
-        String typeName = cls.getTypeParameters()[0].getTypeName();
-        GenericType genericType = type.getGenericType().get(typeName);
+        if (!(type instanceof ParameterizedType)) {
+            // Collection 的type只能是ParameterizedType 否则就是传入类型错误
+            throw new JsonException("error type " + type);
+        }
+        Class<?> cls = ClassUtil.getTypeClass(type);
         List<Object> arrayList = jsonArray.getList();
         // 泛型丢失
-        if (genericType == null || genericType.getType() == Object.class) {
+        if (cls == null || cls == Object.class) {
             return arrayList;
         }
         Collection<Object> list= (Collection<Object>)BeanClassTypeFactory.createBean(cls);
+        // 获取集合的实际类型
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+        Type listType = parameterizedType.getActualTypeArguments()[0];
         for (Object item : arrayList) {
-            Object val = valueConvert(item, genericType, config);
+            Object val = valueConvert(item, listType, config);
             list.add(val);
         }
         return list;
@@ -143,16 +131,15 @@ public class JsonObjectToBean {
          * @param config 配置文件
          * @return java数组
          */
-    private static Object jsonArrayToArray(JsonArray jsonArray, GenericType type, JsonConfig config){
+    private static Object jsonArrayToArray(JsonArray jsonArray, Type type, JsonConfig config){
         if (jsonArray == null) {
             return null;
         }
 
-        Class<?> cls = type.getType();
+        Class<?> cls = ClassUtil.getTypeClass(type);
         if (cls.isArray()) {
             // 数组类型获取实际类型
             cls = cls.getComponentType();
-            type = new GenericType(cls);
         }
         if (cls == Object.class) {
             return jsonArray;
@@ -176,11 +163,11 @@ public class JsonObjectToBean {
      * @param config 配置文件
      * @return java对象
      */
-    private static Object jsonObjectToBean(JsonObject json, GenericType type, JsonConfig config) {
+    private static Object jsonObjectToBean(JsonObject json, Type type, JsonConfig config) {
         if (json == null) {
             return null;
         }
-        Class<?> cls = type.getType();
+        Class<?> cls = ClassUtil.getTypeClass(type);
         Object bean = BeanClassTypeFactory.createBean(cls);
         List<Method> methods = ClassUtil.setterMethods(cls);
         for (Method method : methods) {
@@ -188,17 +175,12 @@ public class JsonObjectToBean {
             String name = ClassUtil.getFieldName(method);
             // 获取方法参数类型
             Type pt = method.getGenericParameterTypes()[0];
-            GenericType targetType = null;
             if (pt instanceof TypeVariable) {
                 // 泛型丢失 尝试修复
-                targetType = type.getGenericType().get(pt.getTypeName());
+                pt  = ClassUtil.getVariableType((ParameterizedType)type, ((TypeVariable<?>) pt).getName());
             }
-            if (targetType == null) {
-                // 当前Type上也可能带有泛型需要进行解析
-                targetType = ClassUtil.typeReference(pt).getGenericType();
-            }
-
-            JsonField field = new JsonField(name, targetType.getType(), json);
+            Class<?> fieldType = ClassUtil.getTypeClass(pt);
+            JsonField field = new JsonField(name, fieldType, json);
             annotationProcessor(field, ann, config);
             if (field.isIgnore()) {
                 continue;
@@ -207,7 +189,7 @@ public class JsonObjectToBean {
                 Object value = field.getValue();
                 // 解包反序列化特殊处理 不在外围判断提高效率
                 if (field.isUnwrappedFlag()) {
-                    value = valueConvert(json, targetType, config);
+                    value = valueConvert(json, pt, config);
                 }
                 ClassUtil.invoke(bean, method, value);
                 continue;
@@ -215,9 +197,9 @@ public class JsonObjectToBean {
             Object val = json.get(field.getName());
             if (pt instanceof GenericArrayType) {
                 // 泛型数组情况
-                val = jsonArrayToArray((JsonArray) val, targetType, config);
+                val = jsonArrayToArray((JsonArray) val, pt, config);
             } else {
-                val = valueConvert(val, targetType, config);
+                val = valueConvert(val, pt, config);
             }
             ClassUtil.invoke(bean, method, val);
         }
@@ -231,11 +213,11 @@ public class JsonObjectToBean {
      * @param config 配置文件
      * @return java对象
      */
-    private static Object valueConvert(Object value, GenericType targetType, JsonConfig config){
+    private static Object valueConvert(Object value, Type targetType, JsonConfig config){
         if (value == null) {
             return null;
         }
-        Class<?> type = targetType.getType();
+        Class<?> type = ClassUtil.getTypeClass(targetType);
         // 尝试基本类型转换
         Object desVal = TypeUtil.deserializer(value, type);
         if (desVal != null) {

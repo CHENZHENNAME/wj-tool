@@ -2,7 +2,6 @@ package cn.chenzhen.wj.fix;
 
 import cn.chenzhen.wj.fix.annotation.Fix;
 import cn.chenzhen.wj.reflect.ClassUtil;
-import cn.chenzhen.wj.reflect.GenericType;
 import cn.chenzhen.wj.reflect.TypeReference;
 import cn.chenzhen.wj.type.BeanClassTypeFactory;
 import cn.chenzhen.wj.type.convert.DateUtil;
@@ -12,10 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
@@ -28,13 +24,13 @@ public class FixToBean {
         this.config = config;
     }
     public <T> T fixToBean(byte[] data, Class<T> clazz) {
-        GenericType type = ClassUtil.typeReference(clazz).getGenericType();
+        Type type = ClassUtil.typeReference(clazz).getType();
         return fixToBean(data, type);
     }
     public <T> T fixToBean(byte[] data, TypeReference<T> reference) {
-        return fixToBean(data, reference.getGenericType());
+        return fixToBean(data, reference.getType());
     }
-    public <T> T fixToBean(byte[] data, GenericType type) {
+    public <T> T fixToBean(byte[] data, Type type) {
         if (data == null || data.length == 0) {
             return null;
         }
@@ -42,36 +38,32 @@ public class FixToBean {
         return fixToBean(type);
     }
     @SuppressWarnings("unchecked")
-    private <T> T fixToBean(GenericType type) {
-        Class<?> clazz = type.getType();
+    private <T> T fixToBean(Type type) {
+        Class<?> clazz = ClassUtil.getTypeClass(type);
         Object bean = BeanClassTypeFactory.createBean(clazz);
         List<Field> list = ClassUtil.getFieldList(clazz);
         for (Field field : list) {
             Fix ann = field.getAnnotation(Fix.class);
             // 没有长度信息 不处理
             Type genericType = field.getGenericType();
-            if (genericType instanceof Class) {
-                type = ClassUtil.typeReference(genericType).getGenericType();
-            } else {
-                // 泛型处理
-                GenericType beanType = type.getGenericType().get(genericType.getTypeName());
-                if (beanType == null) {
-                    type = ClassUtil.typeReference(genericType).getGenericType();
-                }
+            Type filedType = field.getType();
+            if (genericType instanceof TypeVariable) {
+                ParameterizedType parameterizedType = (ParameterizedType) type;
+                filedType = ClassUtil.getVariableType(parameterizedType, ((TypeVariable<?>) genericType).getName());
             }
             Object val = null;
-            if (genericType instanceof GenericArrayType) {
+            if (filedType instanceof GenericArrayType) {
                 // 泛型数组
                 int arraySize = arraySize(bean, ann);
-                val = fixToArray(arraySize, ann, type);
+                val = fixToArray(arraySize, ann, filedType);
             } else {
-                val = readValue(bean, ann, type);
+                val = readValue(bean, ann, filedType);
             }
             ClassUtil.setFieldValue(bean, field, val);
         }
         return (T)bean;
     }
-    private Object readValue(Object bean, Fix ann, GenericType type) {
+    private Object readValue(Object bean, Fix ann, Type type) {
         int size = 0;
         String pattern = config.getPattern(type);
         Charset charset = config.getCharset();
@@ -80,7 +72,7 @@ public class FixToBean {
             pattern = ann.pattern();
             charset = Charset.forName(ann.charset());
         }
-        Class<?> clazz = type.getType();
+        Class<?> clazz = ClassUtil.getTypeClass(type);
         // 基本类型
         if (TypeUtil.getConvertService(clazz) != null) {
             String val  = readBytes(size, charset);
@@ -122,30 +114,29 @@ public class FixToBean {
         return 0;
     }
     @SuppressWarnings("unchecked")
-    private Object fixToCollection(int size, Fix ann, GenericType type){
-        Class<?> cls = type.getType();
-        String typeName = cls.getTypeParameters()[0].getTypeName();
-        GenericType genericType = type.getGenericType().get(typeName);
-        List<Object> list = (List<Object>)BeanClassTypeFactory.createBean(cls);
+    private Object fixToCollection(int size, Fix ann, Type type){
+        Class<?> clazz = ClassUtil.getTypeClass(type);
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+        Type argument = parameterizedType.getActualTypeArguments()[0];
+        List<Object> list = (List<Object>)BeanClassTypeFactory.createBean(clazz);
         // 如果最后一个数下 不知道 为0 的情况
         if (size > 0) {
             for (int i = 0; i < size; i++) {
-                Object val = readValue(null, ann, genericType);
+                Object val = readValue(null, ann, argument);
                 list.add(val);
             }
         } else {
             while (readFlag) {
-                Object val = readValue(null, ann, genericType);
+                Object val = readValue(null, ann, argument);
                 list.add(val);
             }
         }
         return list;
     }
-    private Object fixToArray(int size, Fix ann, GenericType type){
-        Class<?> clazz = type.getType();
+    private Object fixToArray(int size, Fix ann, Type type){
+        Class<?> clazz = ClassUtil.getTypeClass(type);
         if (clazz.isArray()) {
             clazz = clazz.getComponentType();
-            type = new GenericType(clazz);
         }
         List<?> list = (List<?>) fixToCollection(size, ann, type);
         size = list.size();

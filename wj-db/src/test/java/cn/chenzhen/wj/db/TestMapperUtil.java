@@ -3,6 +3,7 @@ package cn.chenzhen.wj.db;
 import cn.chenzhen.wj.db.annotation.Table;
 import cn.chenzhen.wj.db.annotation.TableField;
 import cn.chenzhen.wj.db.wrapper.QueryWrapper;
+import cn.chenzhen.wj.db.wrapper.UpdateWrapper;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,21 @@ public class TestMapperUtil {
         user.setName("测试——UPDATE");
         int count = MapperUtil.update(result);
         System.out.println(count);
+    }
+    @Test
+    public void test_UpdateWrapper(){
+        TestUser user = new TestUser();
+        user.setName("测试");
+        user.setSex("女");
+        user.setStatus(0);
+        MapperUtil.insert(user);
+        TestUser result = MapperUtil.selectOne(user);
+        UpdateWrapper wrapper = new UpdateWrapper()
+                .from("TEST_USER")
+                .set("name",user.getName() + "-aaa")
+                .eq("id", result.getId());
+        MapperUtil.update(wrapper);
+
     }
     @Test
     public void test_Delete(){

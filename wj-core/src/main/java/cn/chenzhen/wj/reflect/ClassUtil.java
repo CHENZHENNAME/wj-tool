@@ -17,6 +17,56 @@ public class ClassUtil {
     }
 
     /**
+     * 尝试通过泛型名称获取实际类型
+     * @param type 泛型信息
+     * @param name 泛型名称
+     * @return 泛型类型
+     */
+    public static Type getVariableType(ParameterizedType type, String name) {
+        Class<?> parentType = (Class<?>)type.getRawType();
+        Type[] arguments = type.getActualTypeArguments();
+        TypeVariable<? extends Class<?>>[] variables = parentType.getTypeParameters();
+        for (int i = 0; i < variables.length; i++) {
+            if (variables[i].getName().equals(name)) {
+                return arguments[i];
+            }
+        }
+        return null;
+
+    }
+
+    /**
+     * 获取类型 如果是泛型向上获取
+     * @param type 类型
+     * @return 实际类型
+     */
+    public static Class<?> getTypeClass(Type type) {
+        if (type instanceof Class<?>) {
+            return (Class<?>) type;
+        }
+        if(type instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) type;
+            return (Class<?>) parameterizedType.getRawType();
+        }
+        if (type instanceof TypeVariable) {
+            // TypeVariable 泛型丢失
+            Type defaultType = ((TypeVariable<?>) type).getBounds()[0];
+            return (Class<?>) defaultType;
+        }
+        if (type instanceof WildcardType) {
+            // WildcardType 问号泛型
+            Type defaultType = ((WildcardType) type).getLowerBounds()[0];
+            return (Class<?>) defaultType;
+        }
+        if (type instanceof GenericArrayType) {
+            // GenericArrayType 泛型数组
+            Type defaultType = ((GenericArrayType) type).getGenericComponentType();
+            return (Class<?>) defaultType;
+        }
+        return null;
+    }
+
+    /**
      * 获取方法上的注解 如果没有尝试获取字段上的注解
      * @param method 方法
      * @return 注解对象

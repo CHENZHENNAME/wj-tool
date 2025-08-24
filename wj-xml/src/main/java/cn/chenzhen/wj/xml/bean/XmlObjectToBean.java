@@ -1,7 +1,6 @@
 package cn.chenzhen.wj.xml.bean;
 
 import cn.chenzhen.wj.reflect.ClassUtil;
-import cn.chenzhen.wj.reflect.GenericType;
 import cn.chenzhen.wj.reflect.TypeReference;
 import cn.chenzhen.wj.type.BeanClassTypeFactory;
 import cn.chenzhen.wj.type.convert.DateUtil;
@@ -32,32 +31,29 @@ public class XmlObjectToBean {
         return toBean(xml, ClassUtil.typeReference(clazz));
     }
     public <T> T toBean(XmlObject xml, TypeReference<T> typeReference) {
-        GenericType type = typeReference.getGenericType();
-        XmlObject rootNode = getRootNode(xml, type.getType());
+        Type type = typeReference.getType();
+        XmlObject rootNode = getRootNode(xml, type);
         return toBean(rootNode, type);
     }
     @SuppressWarnings("unchecked")
-    public <T> T toBean(XmlObject parent, GenericType type) {
-        Class<?> classType = type.getType();
+    public <T> T toBean(XmlObject parent, Type type) {
+        Class<?> classType = ClassUtil.getTypeClass(type);
         Object bean = BeanClassTypeFactory.createBean(classType);
         List<Method> list = ClassUtil.setterMethods(classType);
         for (Method method : list) {
             String name = ClassUtil.getFieldName(method);
 
             // 获取方法参数类型
-            Type pt = method.getGenericParameterTypes()[0];
-            GenericType targetType = null;
-            if (pt instanceof TypeVariable) {
+            Type targetType = method.getGenericParameterTypes()[0];
+            if (targetType instanceof TypeVariable) {
                 // 泛型丢失 尝试修复
-                targetType = type.getGenericType().get(pt.getTypeName());
-            }
-            if (targetType == null) {
-                // 当前Type上也可能带有泛型需要进行解析
-                targetType = ClassUtil.typeReference(pt).getGenericType();
+                ParameterizedType parameterizedType = (ParameterizedType) type;
+                targetType = ClassUtil.getVariableType(parameterizedType, targetType.getTypeName());
             }
 
             XmlField field = new XmlField(name, null, parent);
-            field.setType(targetType.getType());
+            Class<?> typeClass = ClassUtil.getTypeClass(targetType);
+            field.setType(typeClass);
             List<Annotation> ann = ClassUtil.getFieldAndMethodAnnotations(method);
             annotationsProcessor(ann, field);
             if (field.isIgnore()) {
@@ -70,7 +66,7 @@ public class XmlObjectToBean {
             name = field.getName();
             Object node = parent.getNode(name);
             Object value;
-            if (pt instanceof GenericArrayType) {
+            if (targetType instanceof GenericArrayType) {
                 // 泛型数组
                 value = xmlObjectToArray(node, targetType);
             } else {
@@ -81,11 +77,11 @@ public class XmlObjectToBean {
         return (T)bean;
     }
 
-    private Object xmlObjectToArray(Object node, GenericType targetType) {
+    private Object xmlObjectToArray(Object node, Type targetType) {
         if (node == null) {
             return null;
         }
-        Class<?> type = targetType.getType();
+        Class<?> type = ClassUtil.getTypeClass(targetType);
         if (type.isArray()) {
             type = type.getComponentType();
         }
@@ -110,14 +106,15 @@ public class XmlObjectToBean {
         }
     }
     @SuppressWarnings("unchecked")
-    private Object xmlObjectToCollection(Object node, GenericType targetType) {
-        Class<?> type = targetType.getType();
-        String typeName = type.getTypeParameters()[0].getTypeName();
-        GenericType genericType = targetType.getGenericType().get(typeName);
+    private Object xmlObjectToCollection(Object node, Type targetType) {
+        Class<?> type = ClassUtil.getTypeClass(targetType);
+        ParameterizedType parameterizedType = (ParameterizedType) targetType;
+        Type argument = parameterizedType.getActualTypeArguments()[0];
+
 
         List<Object> bean = (List<Object>)BeanClassTypeFactory.createBean(type);
         // 泛型丢失
-        if (genericType == null || genericType.getType() == Object.class) {
+        if (argument == Object.class) {
             if (node instanceof List) {
                 return node;
             }
@@ -131,23 +128,23 @@ public class XmlObjectToBean {
         if (node instanceof List) {
             List<?> list = (List<?>) node;
             for (Object item : list) {
-                Object val = xmlValueConvert(item, genericType);
+                Object val = xmlValueConvert(item, argument);
                 bean.add(val);
             }
             return bean;
         } else {
             // 单个标签 转换为集合
-            Object val = xmlValueConvert(node, genericType);
+            Object val = xmlValueConvert(node, argument);
             bean.add(val);
         }
         return bean;
     }
 
-    private Object xmlValueConvert(Object node, GenericType targetType) {
+    private Object xmlValueConvert(Object node, Type targetType) {
         if (node == null) {
             return null;
         }
-        Class<?> type = targetType.getType();
+        Class<?> type = ClassUtil.getTypeClass(targetType);
         // node 可能是 基本类型 也可能是 XmlObject
         // 基本类型
         Object nodeValue = null;
@@ -202,9 +199,10 @@ public class XmlObjectToBean {
             processor.deserializer(ann, field, config);
         }
     }
-    private XmlObject getRootNode(XmlObject xml, Class<?> clazz){
-        Xml ann = clazz.getAnnotation(Xml.class);
-        String name = clazz.getSimpleName();
+    private XmlObject getRootNode(XmlObject xml, Type clazz){
+        Class<?> type = ClassUtil.getTypeClass(clazz);
+        Xml ann = type.getAnnotation(Xml.class);
+        String name = type.getSimpleName();
 
         if (ann != null && !ann.value().isEmpty()){
             name = ann.value();

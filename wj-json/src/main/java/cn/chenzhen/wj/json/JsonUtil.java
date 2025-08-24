@@ -24,8 +24,9 @@ public class JsonUtil {
      * @param config 凭证
      * @return 目标对象
      */
+    @SuppressWarnings("unchecked")
     public static <T> T jsonToBean(String json, Class<T> clazz, JsonConfig config) {
-        return JsonObjectToBean.jsonToBean(json, clazz, config);
+        return (T)JsonObjectToBean.jsonToBean(json, clazz, config);
     }
     /**
      * json字符串反序列化为java对象
