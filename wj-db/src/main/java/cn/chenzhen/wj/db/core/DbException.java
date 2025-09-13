@@ -1,4 +1,4 @@
-package cn.chenzhen.wj.db;
+package cn.chenzhen.wj.db.core;
 
 public class DbException extends RuntimeException{
     public DbException(String message) {

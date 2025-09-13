@@ -1,4 +1,4 @@
-package cn.chenzhen.wj.db;
+package cn.chenzhen.wj.db.core;
 
 import javax.sql.DataSource;
 import java.sql.Connection;

@@ -1,7 +1,7 @@
-package cn.chenzhen.wj.db.bean;
+package cn.chenzhen.wj.db.core.bean;
 
 
-import cn.chenzhen.wj.db.wrapper.QueryWrapper;
+import cn.chenzhen.wj.db.core.wrapper.QueryWrapper;
 
 public class SelectBeanSql implements BeanSql {
     private final QueryWrapper wrapper;

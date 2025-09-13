@@ -1,14 +1,28 @@
 package cn.chenzhen.wj.db;
 
-import cn.chenzhen.wj.db.bean.BeanSql;
-import cn.chenzhen.wj.db.bean.SqlBeanUtil;
-import cn.chenzhen.wj.db.wrapper.QueryWrapper;
-import cn.chenzhen.wj.db.wrapper.UpdateWrapper;
+import cn.chenzhen.wj.db.core.ConnectionManager;
+import cn.chenzhen.wj.db.core.DbException;
+import cn.chenzhen.wj.db.core.bean.BeanSql;
+import cn.chenzhen.wj.db.core.bean.SqlBeanUtil;
+import cn.chenzhen.wj.db.core.wrapper.QueryWrapper;
+import cn.chenzhen.wj.db.core.wrapper.UpdateWrapper;
+import cn.chenzhen.wj.db.proxy.MapperProxyService;
 
+import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.function.Consumer;
 
 public class MapperUtil {
+    /**
+     * 创建 mapper接口代理对象
+     * @param clazz mapper类型
+     * @return 对象
+     * @param <T> mapper接口类型
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T getService(Class<T> clazz){
+        return (T) Proxy.newProxyInstance(MapperUtil.class.getClassLoader(), new Class[]{clazz}, new MapperProxyService(clazz));
+    }
     /**
      * 保存对象到数据库 自动生成insert语句
      * 空字段不入库

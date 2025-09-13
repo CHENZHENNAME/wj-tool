@@ -1,4 +1,4 @@
-package cn.chenzhen.wj.db.bean;
+package cn.chenzhen.wj.db.core.bean;
 
 
 /**

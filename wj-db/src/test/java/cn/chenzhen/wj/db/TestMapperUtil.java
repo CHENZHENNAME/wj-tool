@@ -2,14 +2,14 @@ package cn.chenzhen.wj.db;
 
 import cn.chenzhen.wj.db.annotation.Table;
 import cn.chenzhen.wj.db.annotation.TableField;
-import cn.chenzhen.wj.db.wrapper.QueryWrapper;
-import cn.chenzhen.wj.db.wrapper.UpdateWrapper;
+import cn.chenzhen.wj.db.core.ConnectionManager;
+import cn.chenzhen.wj.db.core.wrapper.QueryWrapper;
+import cn.chenzhen.wj.db.core.wrapper.UpdateWrapper;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 public class TestMapperUtil {
     private static final Logger logger = LoggerFactory.getLogger(TestMapperUtil.class);

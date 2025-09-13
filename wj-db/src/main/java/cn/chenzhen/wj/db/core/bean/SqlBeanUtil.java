@@ -1,11 +1,11 @@
-package cn.chenzhen.wj.db.bean;
+package cn.chenzhen.wj.db.core.bean;
 
-import cn.chenzhen.wj.db.DbException;
+import cn.chenzhen.wj.db.core.DbException;
 import cn.chenzhen.wj.db.annotation.Table;
 import cn.chenzhen.wj.db.annotation.TableField;
-import cn.chenzhen.wj.db.wrapper.DeleteWrapper;
-import cn.chenzhen.wj.db.wrapper.QueryWrapper;
-import cn.chenzhen.wj.db.wrapper.UpdateWrapper;
+import cn.chenzhen.wj.db.core.wrapper.DeleteWrapper;
+import cn.chenzhen.wj.db.core.wrapper.QueryWrapper;
+import cn.chenzhen.wj.db.core.wrapper.UpdateWrapper;
 import cn.chenzhen.wj.reflect.ClassUtil;
 
 import java.lang.reflect.Method;

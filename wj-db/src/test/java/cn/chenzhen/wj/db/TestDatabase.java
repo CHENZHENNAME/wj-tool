@@ -1,6 +1,7 @@
 package cn.chenzhen.wj.db;
 
-import cn.chenzhen.wj.db.wrapper.QueryWrapper;
+import cn.chenzhen.wj.db.core.ConnectionManager;
+import cn.chenzhen.wj.db.core.wrapper.QueryWrapper;
 import com.alibaba.druid.pool.DruidDataSource;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;

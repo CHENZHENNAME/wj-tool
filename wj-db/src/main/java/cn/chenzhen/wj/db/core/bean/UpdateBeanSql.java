@@ -1,7 +1,7 @@
-package cn.chenzhen.wj.db.bean;
+package cn.chenzhen.wj.db.core.bean;
 
 
-import cn.chenzhen.wj.db.wrapper.UpdateWrapper;
+import cn.chenzhen.wj.db.core.wrapper.UpdateWrapper;
 
 public class UpdateBeanSql implements BeanSql {
     private final UpdateWrapper wrapper;

@@ -1,7 +1,7 @@
-package cn.chenzhen.wj.db.bean;
+package cn.chenzhen.wj.db.core.bean;
 
 
-import cn.chenzhen.wj.db.wrapper.DeleteWrapper;
+import cn.chenzhen.wj.db.core.wrapper.DeleteWrapper;
 
 public class DeleteBeanSql implements BeanSql {
     private final DeleteWrapper wrapper;

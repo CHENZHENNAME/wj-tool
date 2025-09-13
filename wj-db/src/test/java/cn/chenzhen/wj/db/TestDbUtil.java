@@ -2,6 +2,7 @@ package cn.chenzhen.wj.db;
 
 import cn.chenzhen.wj.db.annotation.Table;
 import cn.chenzhen.wj.db.annotation.TableField;
+import cn.chenzhen.wj.db.core.ConnectionManager;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

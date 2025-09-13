@@ -1,4 +1,4 @@
-package cn.chenzhen.wj.db.wrapper;
+package cn.chenzhen.wj.db.core.wrapper;
 
 
 import cn.chenzhen.wj.db.util.StrUtil;

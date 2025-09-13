@@ -1,4 +1,4 @@
-package cn.chenzhen.wj.db;
+package cn.chenzhen.wj.db.core;
 
 import cn.chenzhen.wj.db.annotation.TableField;
 import cn.chenzhen.wj.reflect.ClassUtil;

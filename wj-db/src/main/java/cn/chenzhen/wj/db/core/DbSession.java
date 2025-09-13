@@ -1,4 +1,4 @@
-package cn.chenzhen.wj.db;
+package cn.chenzhen.wj.db.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
